@@ -1,0 +1,70 @@
+﻿@using FileAccessApp.Domain
+@inject Services.FileService FileService
+
+<div id="folder" class="folder">
+    @if (Files != null)
+    {
+        <div class="breadcrumb">
+            @{
+                var pathList = string.IsNullOrWhiteSpace(CurrentPath)
+                            ? Array.Empty<string>()
+                            : CurrentPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                
+                string path = route;
+            }
+            <a href="/files">root</a>
+            <span>/</span>
+
+            @foreach (var piece in pathList)
+            {
+                path += $"/{piece}";
+                <a href="@path">@piece</a>
+                <span>/</span>
+            }
+        </div>
+
+        foreach (var file in Files)
+        {
+            <div class="file">
+                @{
+                    string filePath = string.IsNullOrEmpty(CurrentPath)
+                        ? file.Name
+                        : $"{CurrentPath}/{file.Name}";
+
+                    string fileLogo = "📁";
+                    string link = $"{route}/{filePath}";
+                }
+                <div>
+                    @if (!file.IsDirectory)
+                    {
+                        fileLogo = "📄";
+                        link = $"/api/files/{filePath}";
+                    }
+                    <span>@fileLogo</span>
+
+                    <a href="@link">@file.Name</a>
+                </div>
+                @if (IsLoggedIn)
+                {
+                    <button class="warning" @onclick="() => OnDelete.InvokeAsync(filePath)">X</button>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public List<FileDomain> Files { get; set; } = new List<FileDomain>();
+
+    [Parameter]
+    public string CurrentPath { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsLoggedIn { get; set; } = false;
+
+    [Parameter]
+    public EventCallback<string> OnDelete { get; set; }
+
+    private const string route = "/files";
+}

@@ -1,0 +1,63 @@
+﻿@inject IJSRuntime JS
+@inject NavigationManager Nav
+@inject Services.AuthService authService
+
+<nav>
+    <div class="flex-left">
+        <a href="/">
+            <img src="logo.png" alt="logo" height="50">
+        </a>
+    </div>
+    
+    <div class="flex-left">
+        <a href="/">Forside</a>
+        @if (isLoggedIn)
+        {
+            <button @onclick="Logout">Log ud</button>
+        }
+        else
+        {
+            <a href="/login">Log ind</a>
+        }
+    </div>
+</nav>
+
+@code {
+    private bool isLoggedIn;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            firstRender = false;
+            authService.OnChange += UpdateTokenState;
+
+            string? storedToken = await JS.InvokeAsync<string>("localStorage.getItem", "jwt");
+
+            if (!string.IsNullOrEmpty(storedToken))
+            {
+                await authService.SetToken(storedToken);
+            }
+            // else await Logout();
+        }
+    }
+
+    private async Task Logout()
+    {
+        await JS.InvokeVoidAsync("localStorage.removeItem", "jwt");
+        isLoggedIn = false;
+        await authService.ClearToken();
+        Nav.NavigateTo("/");
+    }
+
+    private async Task UpdateTokenState()
+    {
+        isLoggedIn = !string.IsNullOrEmpty(authService.Token);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        authService.OnChange -= UpdateTokenState;
+    }
+}

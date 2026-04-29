@@ -1,0 +1,60 @@
+﻿@inject HttpClient Http
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@using FileAccessApp.Models
+@inject Services.AuthService authService
+
+@page "/login"
+
+<PageTitle>Login</PageTitle>
+
+<div class="form">
+    <EditForm Model="@model" OnSubmit="Submit">
+        <label>Brugernavn</label>
+        <InputText type="text" @bind-Value="model.Username" />
+        <br><br>
+        <label>Adgangskode</label>
+        <InputText type="password" @bind-Value="model.Password" />
+        <br><br>
+
+        <button type="submit">Login</button>
+    </EditForm>
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <br>
+        <p>@message</p>
+    }
+</div>
+
+
+
+@code {
+    private LoginFormModel model = new();
+    private string message = string.Empty;
+
+
+    private async Task Submit()
+    {
+        var response = await Http.PostAsJsonAsync("api/auth/login", model);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine("Login failed");
+            model.Password = "";
+            message = $"Brugernavn og adganskode matcher ikke";
+            return;
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<TokenResponse>();
+        await JS.InvokeVoidAsync("localStorage.setItem", "jwt", result!.Token);
+
+        await authService.SetToken(result!.Token);
+        Nav.NavigateTo("/");
+    }
+
+    public class LoginFormModel
+    {
+        public string Username { set; get; } = string.Empty;
+        public string Password { set; get; } = string.Empty;
+    }
+}

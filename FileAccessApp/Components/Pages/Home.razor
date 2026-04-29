@@ -1,0 +1,226 @@
+﻿@using Domain
+@using System.Net.Http.Headers
+@inject Services.FileService FileService
+@inject Services.AuthService authService
+
+@page "/"
+@page "/files/{*CurrentPath}"
+
+<PageTitle>Home</PageTitle>
+
+@if (isLoggedIn)
+{
+    <div class="split-container">
+        <div class="split">
+            <h2>Upload Fil</h2>
+            <label>Upload fil:</label>
+            <label class="drop-area">
+                <InputFile OnChange="OnFileSelected" multiple class="file-input" />
+                <div class="drop-content">
+                    <h4 >Drop filer her</h4>
+                    <p >eller klik for at vælge filer</p>
+                        @if (selectedFiles != null)
+                        {
+                            string selectedFilesString = string.Join(" | ", selectedFiles.Select(s => s.Name));
+                            <p>@selectedFilesString</p>
+                        }
+                </div>
+            </label>
+
+
+
+            <button type="button" @onclick="ClearFileInput">Fjern filer</button>
+            <br><br>
+            <button type="submit" @onclick="UploadFiles">Upload</button>
+            <br><br>
+        </div>
+        <div class="split">
+                <h2>Opret Mappe</h2>
+            <EditForm Model="@model" OnSubmit="CreateDir">
+                <label>Mappe navn:</label>
+                <InputText type="text" @bind-Value="model.Name" required />
+                <br /><br />
+                <button type="submit">Opret</button>
+            </EditForm>
+        </div>
+    </div>
+    <br>
+    @if (message != string.Empty)
+    {
+        <div class="box">@message</div>
+        <br>
+    }
+}
+
+<FolderDisplay Files="@files" CurrentPath="@CurrentPath" IsLoggedIn="isLoggedIn" OnDelete="AskDelete" />
+
+@if (showConfirm)
+{
+    <div class="modal-backdrop">
+        <div class="modal-box">
+            <h3>Bekræft handling</h3>
+            <p>Er du sikker på at du vil slette <b>@fileToDelete</b>?</p>
+
+            <div class="modal-actions">
+                <button class="warning" @onclick="ConfirmDelete">Delete</button>
+                <button class="bold" @onclick="CancelDelete">Cancel</button>
+            </div>
+        </div>
+    </div>
+}
+
+
+@code {
+    [Parameter]
+    public string? CurrentPath { get; set; }
+
+    private CreateDirFormModel model = new();
+    private IReadOnlyList<IBrowserFile>? selectedFiles;
+
+    List<FileDomain>? files;
+
+    private string message = string.Empty;
+    private bool isLoggedIn = false;
+
+    private bool showConfirm = false;
+    private string? fileToDelete;
+
+    public class CreateDirFormModel
+    {
+        public string Name { set; get; } = string.Empty;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (CurrentPath == null)
+        {
+            CurrentPath = string.Empty;
+        }
+
+        UpdateTable();
+    }
+
+    private void UpdateTable()
+    {
+        files = FileService.GetFiles(CurrentPath!);
+
+        message = string.Empty;
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFiles = e.GetMultipleFiles();
+        StateHasChanged();
+    }
+
+    private async Task UploadFiles()
+    {
+        if (!await authService.ValidToken(authService.Token!))
+        {
+            message = "You are not autherized";
+            return;
+        }
+
+        if (selectedFiles == null || !selectedFiles.Any())
+        {
+            message = "No files selected";
+            return;
+        }
+
+        foreach (var file in selectedFiles)
+        {
+            try
+            {
+                await FileService.UploadFileAsync(CurrentPath!, file);
+            }
+            catch (Exception ex)
+            {
+                message = $"Error uploading {file.Name}: {ex.Message}";
+                return;
+            }
+        }
+
+        message = "Files uploaded successfully!";
+        selectedFiles = null;
+        UpdateTable();
+    }
+
+    private async Task CreateDir()
+    {
+        if (!await authService.ValidToken(authService.Token!))
+        {
+            message = "You are not autherized";
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Name))
+        {
+            FileService.CreateDir(CurrentPath!, model.Name);
+
+            model.Name = string.Empty;
+
+            UpdateTable();
+        }
+        else message = "Folder can not be empty";
+    }
+
+
+    private async Task AskDelete(string filePath)
+    {
+        if (!await authService.ValidToken(authService.Token!))
+        {
+            message = "You are not autherized";
+            return;
+        }
+
+        fileToDelete = filePath;
+        showConfirm = true;
+    }
+
+    private void ConfirmDelete()
+    {
+        if (fileToDelete != null)
+        {
+            FileService.DeleteEntry(fileToDelete);
+            UpdateTable();
+        }
+
+        showConfirm = false;
+        fileToDelete = null;
+    }
+
+    private void CancelDelete()
+    {
+        showConfirm = false;
+        fileToDelete = null;
+    }
+
+    private void ClearFileInput()
+    {
+        selectedFiles = null;
+
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            firstRender = false;
+            authService.OnChange += UpdateTokenState;
+
+            await UpdateTokenState();
+        }
+    }
+
+    private async Task UpdateTokenState()
+    {
+        isLoggedIn = !string.IsNullOrEmpty(authService.Token);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        authService.OnChange -= UpdateTokenState;
+    }
+}
