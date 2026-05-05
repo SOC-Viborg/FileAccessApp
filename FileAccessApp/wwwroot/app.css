@@ -177,6 +177,7 @@ input[type="text"], input[type="password"], .input {
     font-size: 20px;
     background-color: var(--warning);
     padding: 0.25em 0.5em;
+    box-shadow: 0;
 
     &:hover {
         background-color: var(--warning-hover);

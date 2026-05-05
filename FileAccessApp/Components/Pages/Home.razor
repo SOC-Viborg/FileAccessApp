@@ -189,8 +189,16 @@
     {
         if (fileToDelete != null)
         {
-            FileService.DeleteEntry(fileToDelete);
-            UpdateTable();
+            try
+            {
+                FileService.DeleteEntry(fileToDelete);
+                UpdateTable();
+            }
+            catch(Exception ex)
+            {
+                message = $"Error deleting item: {ex.Message}";
+                return;
+            }
         }
 
         showConfirm = false;
