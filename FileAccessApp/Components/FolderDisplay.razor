@@ -46,7 +46,7 @@
                 </div>
                 @if (IsLoggedIn)
                 {
-                    <button class="warning" @onclick="() => OnDelete.InvokeAsync(filePath)">X</button>
+                    <button class="warning" style="box-shadow: none;" @onclick="() => OnDelete.InvokeAsync(filePath)">X</button>
                 }
             </div>
         }
