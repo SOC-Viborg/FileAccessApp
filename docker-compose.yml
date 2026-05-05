@@ -7,10 +7,15 @@ services:
     environment: 
     - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT} 
     - ASPNETCORE_URLS=http://+:8080 
+    - Admin_Username=${Admin_Username}
+    - Admin_Password=${Admin_Password}
+    - ROOT_PATH=${ROOT_PATH}
+    - HTTP_PORT=${HTTP_PORT}
+    - JWT__Key=${JWT__Key}
+    - JWT__Issuer=${JWT__Issuer}
+    - JWT__Audience=${JWT__Audience}
     ports: 
       - "${HTTP_PORT}:8080" 
-    env_file:
-      - .env
     volumes:
       - ${ROOT_PATH}:/app/data/files
     restart: unless-stopped
