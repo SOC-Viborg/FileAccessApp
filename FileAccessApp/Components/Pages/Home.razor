@@ -155,11 +155,19 @@
 
         if (!string.IsNullOrWhiteSpace(model.Name))
         {
-            FileService.CreateDir(CurrentPath!, model.Name);
+            try
+            {
+                FileService.CreateDir(CurrentPath!, model.Name);
 
-            model.Name = string.Empty;
+                model.Name = string.Empty;
 
-            UpdateTable();
+                UpdateTable();
+            }
+            catch (Exception ex)
+            {
+                message = $"Error creating folder: {ex.Message}";
+                return;
+            }
         }
         else message = "Folder can not be empty";
     }
