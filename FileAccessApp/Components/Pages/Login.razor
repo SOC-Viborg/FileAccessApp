@@ -46,7 +46,7 @@
         }
 
         var result = await response.Content.ReadFromJsonAsync<TokenResponse>();
-        await JS.InvokeVoidAsync("localStorage.setItem", "jwt", result!.Token);
+        await JS.InvokeVoidAsync("localStorage.setItem", "soc-cdn-token", result!.Token);
 
         await authService.SetToken(result!.Token);
         Nav.NavigateTo("/");

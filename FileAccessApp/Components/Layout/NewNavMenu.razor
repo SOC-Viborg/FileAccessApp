@@ -32,7 +32,7 @@
             firstRender = false;
             authService.OnChange += UpdateTokenState;
 
-            string? storedToken = await JS.InvokeAsync<string>("localStorage.getItem", "jwt");
+            string? storedToken = await JS.InvokeAsync<string>("localStorage.getItem", "soc-cdn-token");
 
             if (!string.IsNullOrEmpty(storedToken))
             {
@@ -44,7 +44,7 @@
 
     private async Task Logout()
     {
-        await JS.InvokeVoidAsync("localStorage.removeItem", "jwt");
+        await JS.InvokeVoidAsync("localStorage.removeItem", "soc-cdn-token");
         isLoggedIn = false;
         await authService.ClearToken();
         Nav.NavigateTo("/");
